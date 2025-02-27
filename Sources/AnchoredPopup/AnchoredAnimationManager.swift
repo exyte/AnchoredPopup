@@ -153,7 +153,9 @@ struct TriggerButton<V>: ViewModifier where V: View {
             )
             .onPreferenceChange(ButtonFramePreferenceKey.self) { value in
                 if id == value.id {
-                    AnchoredAnimationManager.shared.updateFrame(for: value.id, frame: value.frame)
+                    DispatchQueue.main.async {
+                        AnchoredAnimationManager.shared.updateFrame(for: value.id, frame: value.frame)
+                    }
                 }
             }
             .onReceive(AnchoredAnimationManager.shared.publisher(for: id)) { animation in

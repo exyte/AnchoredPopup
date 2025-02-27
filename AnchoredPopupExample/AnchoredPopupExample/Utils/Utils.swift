@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-extension String: Identifiable {
+extension String: @retroactive Identifiable {
     public var id: String { self }
 }
 
@@ -63,6 +63,6 @@ extension Shape {
 }
 
 class Constants {
-    static var sportEmoji = ["🤼‍♂️", "🧘", "🚴", "🏊", "🏄", "🤸", "⛹️", "🏋️", "⚽️"]
+    static let sportEmoji = ["🤼‍♂️", "🧘", "🚴", "🏊", "🏄", "🤸", "⛹️", "🏋️", "⚽️"]
 }
 
