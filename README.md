@@ -50,7 +50,8 @@ Customized example:
 
 ### Optional parameters
 - `position` - determines where the popup appears on screen. Available options:
-    * `.anchorRelative(UnitPoint)` - aligns the popup relative to the anchor view at the corresponding proportion
+    * `.anchorRelative(UnitPoint, fitsScreen: Bool = true)` - aligns the popup relative to the anchor view at the corresponding proportion; when `fitsScreen` is `true` it will try to keep the popup within the screen safe area
+    * `.auto` - like `.anchorRelative(..., fitsScreen: true)`, but automatically picks the best `UnitPoint` (corner) to keep the popup within the safe area
     * `.screenRelative(UnitPoint)` - aligns the popup relative to the whole screen (default: `.center`)
     * `.absolute(UnitPoint, position: CGPoint)` - places the popup at an exact screen coordinate, with `UnitPoint` specifying which part of the popup aligns to that position
 - `animation` - appear/disappear animation   

@@ -326,21 +326,26 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
         let ch = contentSize.floatHeight
 
         switch params.position {
-        case .anchorRelative(let p):
-            let tw = triggerButtonFrame.floatWidth
-            let th = triggerButtonFrame.floatHeight
+        case .anchorRelative(let p, let fitsScreen):
+            let baseOffset = anchorRelativeBaseOffset(point: p, contentWidth: cw, contentHeight: ch)
+            guard fitsScreen else { return baseOffset }
+            return clampedOffsetKeepingPopupInBounds(
+                baseOffset: baseOffset,
+                contentWidth: cw,
+                contentHeight: ch,
+                bounds: safeAreaBounds()
+            )
 
-            // difference between centers
-            let w = cw/2 - tw/2
-            let h = ch/2 - th/2
-
-            // normalization: (0, 1) -> (1, -1)
-            let px = -2 * p.x + 1
-            let py = -2 * p.y + 1
-
-            // the content view center is currently same as anchor view
-            // +/- the difference between centers
-            return CGSize(width: w * px, height: h * py)
+        case .auto:
+            let bounds = safeAreaBounds()
+            let autoPoint = autoAnchorPoint(contentWidth: cw, contentHeight: ch, bounds: bounds)
+            let baseOffset = anchorRelativeBaseOffset(point: autoPoint, contentWidth: cw, contentHeight: ch)
+            return clampedOffsetKeepingPopupInBounds(
+                baseOffset: baseOffset,
+                contentWidth: cw,
+                contentHeight: ch,
+                bounds: bounds
+            )
 
         case .screenRelative(let p):
             let tx = triggerButtonFrame.floatMidX
@@ -372,5 +377,92 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
             // cw/2 * px: align the specified unit point of popup with that position
             return CGSize(width: -tx + position.x + cw/2 * px, height: -ty + position.y + ch/2 * py)
         }
+    }
+
+    private func anchorRelativeBaseOffset(
+        point p: UnitPoint,
+        contentWidth cw: CGFloat,
+        contentHeight ch: CGFloat
+    ) -> CGSize {
+        let tw = triggerButtonFrame.floatWidth
+        let th = triggerButtonFrame.floatHeight
+
+        // difference between centers
+        let w = cw/2 - tw/2
+        let h = ch/2 - th/2
+
+        // normalization: (0, 1) -> (1, -1)
+        let px = -2 * p.x + 1
+        let py = -2 * p.y + 1
+
+        // the content view center is currently same as anchor view
+        // +/- the difference between centers
+        return CGSize(width: w * px, height: h * py)
+    }
+
+    private func clampedOffsetKeepingPopupInBounds(
+        baseOffset: CGSize,
+        contentWidth cw: CGFloat,
+        contentHeight ch: CGFloat,
+        bounds: CGRect
+    ) -> CGSize {
+        let triggerCenter = CGPoint(x: triggerButtonFrame.floatMidX, y: triggerButtonFrame.floatMidY)
+        let desiredCenter = CGPoint(x: triggerCenter.x + baseOffset.width, y: triggerCenter.y + baseOffset.height)
+
+        let halfW = cw / 2
+        let halfH = ch / 2
+
+        // If popup is larger than bounds, keep as much visible as possible by clamping using bounds half-size
+        let clampedHalfW = min(halfW, bounds.width / 2)
+        let clampedHalfH = min(halfH, bounds.height / 2)
+
+        let minCenterX = bounds.minX + clampedHalfW
+        let maxCenterX = bounds.maxX - clampedHalfW
+        let minCenterY = bounds.minY + clampedHalfH
+        let maxCenterY = bounds.maxY - clampedHalfH
+
+        let clampedCenter = CGPoint(
+            x: min(max(desiredCenter.x, minCenterX), maxCenterX),
+            y: min(max(desiredCenter.y, minCenterY), maxCenterY)
+        )
+
+        return CGSize(width: clampedCenter.x - triggerCenter.x, height: clampedCenter.y - triggerCenter.y)
+    }
+
+    private func autoAnchorPoint(contentWidth cw: CGFloat, contentHeight ch: CGFloat, bounds: CGRect) -> UnitPoint {
+        let candidates: [UnitPoint] = [.topLeading, .topTrailing, .bottomLeading, .bottomTrailing]
+        let triggerCenter = CGPoint(x: triggerButtonFrame.floatMidX, y: triggerButtonFrame.floatMidY)
+
+        // Stay on the same side of the screen as the anchor
+        let preferredX: CGFloat = triggerCenter.x < bounds.midX ? 0 : 1
+        let preferredY: CGFloat = triggerCenter.y < bounds.midY ? 0 : 1
+
+        func overflowScore(for point: UnitPoint) -> CGFloat {
+            let baseOffset = anchorRelativeBaseOffset(point: point, contentWidth: cw, contentHeight: ch)
+            let center = CGPoint(x: triggerCenter.x + baseOffset.width, y: triggerCenter.y + baseOffset.height)
+            let frame = CGRect(x: center.x - cw/2, y: center.y - ch/2, width: cw, height: ch)
+
+            let overflowLeft = max(bounds.minX - frame.minX, 0)
+            let overflowRight = max(frame.maxX - bounds.maxX, 0)
+            let overflowTop = max(bounds.minY - frame.minY, 0)
+            let overflowBottom = max(frame.maxY - bounds.maxY, 0)
+
+            // Minimize how much of the popup goes outside bounds
+            let overflow = overflowLeft + overflowRight + overflowTop + overflowBottom
+
+            // Choose the closest corner for the anchor
+            let tieBreaker = abs(point.x - preferredX) * 0.001 + abs(point.y - preferredY) * 0.001
+            return overflow + tieBreaker
+        }
+
+        return candidates.min(by: { overflowScore(for: $0) < overflowScore(for: $1) }) ?? .bottomLeading
+    }
+
+    private func safeAreaBounds() -> CGRect {
+        if let window = WindowManager.shared.windows[id] {
+            return window.bounds.inset(by: window.safeAreaInsets)
+        }
+
+        return UIScreen.main.bounds
     }
 }

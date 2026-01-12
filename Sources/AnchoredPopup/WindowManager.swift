@@ -59,7 +59,8 @@ class UIPassthroughWindow: UIWindow {
             vc.view.layoutSubviews() // otherwise the frame is as if the popup is still outside the screen
             if let _ = isTouchInsideSubview(point: point, vc: vc.view) {
                 // pass tap to this UIPassthroughVC
-                return vc.view
+                let farthestDescendent = super.hitTest(point, with: event)
+                return farthestDescendent
             }
         }
         if closeOnTapOutside {
