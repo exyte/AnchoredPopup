@@ -167,7 +167,7 @@ dependencies: [
 
 ## Requirements
 
-* iOS 17.0+ 
+* iOS 16.0+ 
 
 ## Our other open source SwiftUI libraries
 [PopupView](https://github.com/exyte/PopupView) - Toasts and popups library    
