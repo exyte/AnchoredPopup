@@ -49,7 +49,7 @@ struct ProfileView: View {
                         .useAsPopupAnchor(id: "questions_view") {
                             QuestionsView()
                         } customize: {
-                            $0.position(.anchorRelative(.bottomTrailing))
+                            $0.position(.auto)
                                 .background(.none)
                                 .isBackgroundPassthrough(true)
                         }

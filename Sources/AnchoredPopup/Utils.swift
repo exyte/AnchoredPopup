@@ -31,6 +31,7 @@ struct ButtonFramePreferenceKey: PreferenceKey {
 
 // MARK: - AnimatedBackgroundView
 
+
 struct AnimatedBackgroundView: View {
     @Binding var id: String
     var background: AnchoredPopupBackground
@@ -38,24 +39,29 @@ struct AnimatedBackgroundView: View {
     @State private var animatableOpacity: CGFloat = 0
 
     var body: some View {
-        Group {
-            switch background {
-            case .none:
-                EmptyView()
-            case .color(let color):
-                color
-            case .blur(let radius):
-                Blur(radius: radius)
-            case .view(let anyView):
-                anyView
+        ZStack {
+            Group {
+                switch background {
+                case .none:
+                    EmptyView()
+                case .color(let color):
+                    color
+                case .blur(let radius):
+                    Blur(radius: radius)
+                case .view(let anyView):
+                    anyView
+                }
             }
-        }
-        .ignoresSafeArea()
-        .opacity(animatableOpacity)
-        .onReceive(AnchoredAnimationManager.shared.statePublisher(for: id)) { animation in
-            if let animation {
-                setupAndLaunchAnimation(animation)
+            .ignoresSafeArea()
+            .opacity(animatableOpacity)
+            .onReceive(AnchoredAnimationManager.shared.statePublisher(for: id)) { animation in
+                if let animation {
+                    setupAndLaunchAnimation(animation)
+                }
             }
+            
+            PopupBackgroundFrameMarker()
+                .ignoresSafeArea()
         }
     }
 
@@ -78,6 +84,18 @@ struct AnimatedBackgroundView: View {
     private func setDisplayedState() {
         animatableOpacity = 1
     }
+}
+
+/// A special view to handle hit-testing on background parts of popup content
+struct PopupBackgroundFrameMarker: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        return view
+    }
+    
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 // MARK: - IntRect
