@@ -63,9 +63,9 @@ class UIPassthroughWindow: UIWindow {
         
         let layerHitTestResult = vc.view.layer.hitTest(vc.view.convert(point, from: self))
         let superlayerDelegateName = layerHitTestResult?.superlayer?.delegate.map { String(describing: type(of: $0)) }
-        let isTappedOnBackground = superlayerDelegateName?.contains(String(describing: PopupBackgroundFrameMarker.self)) ?? false
+        let didTapBackground = superlayerDelegateName?.contains(String(describing: PopupHitTestingBackground.self)) ?? false
         
-        if isTappedOnBackground {
+        if didTapBackground {
             if closeOnTapOutside {
                 AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .shrinking)
             }
@@ -79,7 +79,6 @@ class UIPassthroughWindow: UIWindow {
         // pass tap to this
         let farthestDescendent = super.hitTest(point, with: event)
         return farthestDescendent
-        
     }
 
     private func isTouchInsideSubview(point: CGPoint, vc: UIView) -> UIView? {

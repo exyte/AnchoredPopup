@@ -33,8 +33,8 @@ public class AnchoredPopup {
 // - MARK: Customization parameters
 
 public enum AnchoredPopupPosition {
-    case anchorRelative(_ point: UnitPoint, fitsScreen: Bool = true) // popup view will be aligned to anchor view at corresponding proportion
-    case auto // similar to `anchorRelative(..., fitsScreen: true)` but auto-picks the best anchor `UnitPoint` to keep the popup within safe area
+    case anchorRelative(_ point: UnitPoint, keepInScreenBounds: Bool = true) // popup view will be aligned to anchor view at corresponding proportion
+    case auto // similar to `anchorRelative(..., keepInScreenBounds: true)` but auto-picks the best anchor `UnitPoint` to keep the popup within safe area
     case screenRelative(_ point: UnitPoint = .center) // popup view will be aligned to whole screen
     case absolute(_ point: UnitPoint, position: CGPoint) // popup will be placed at exact screen position, with point specifying which part of popup aligns to that position
 }

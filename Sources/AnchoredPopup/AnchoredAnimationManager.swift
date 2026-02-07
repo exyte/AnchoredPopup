@@ -326,9 +326,9 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
         let ch = contentSize.floatHeight
 
         switch params.position {
-        case .anchorRelative(let p, let fitsScreen):
+        case .anchorRelative(let p, let keepInScreenBounds):
             let baseOffset = anchorRelativeBaseOffset(point: p, contentWidth: cw, contentHeight: ch)
-            guard fitsScreen else { return baseOffset }
+            guard keepInScreenBounds else { return baseOffset }
             return clampedOffsetKeepingPopupInBounds(
                 baseOffset: baseOffset,
                 contentWidth: cw,

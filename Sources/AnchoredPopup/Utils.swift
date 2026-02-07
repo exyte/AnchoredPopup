@@ -31,7 +31,6 @@ struct ButtonFramePreferenceKey: PreferenceKey {
 
 // MARK: - AnimatedBackgroundView
 
-
 struct AnimatedBackgroundView: View {
     @Binding var id: String
     var background: AnchoredPopupBackground
@@ -60,7 +59,7 @@ struct AnimatedBackgroundView: View {
                 }
             }
             
-            PopupBackgroundFrameMarker()
+            PopupHitTestingBackground()
                 .ignoresSafeArea()
         }
     }
@@ -87,7 +86,7 @@ struct AnimatedBackgroundView: View {
 }
 
 /// A special view to handle hit-testing on background parts of popup content
-struct PopupBackgroundFrameMarker: UIViewRepresentable {
+struct PopupHitTestingBackground: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         view.backgroundColor = .clear
