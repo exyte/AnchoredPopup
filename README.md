@@ -40,6 +40,7 @@ Customized example:
     $0.position(.anchorRelative(.bottomLeading))
         .background(.none)
         .isBackgroundPassthrough(true)
+        .openOnTap(true)
         .closeOnTap(false)
 }
 ```
@@ -55,6 +56,7 @@ Customized example:
     * `.screenRelative(UnitPoint)` - aligns the popup relative to the whole screen (default: `.center`)
     * `.absolute(UnitPoint, position: CGPoint)` - places the popup at an exact screen coordinate, with `UnitPoint` specifying which part of the popup aligns to that position
 - `animation` - appear/disappear animation   
+- `openOnTap` - enable/disable opening on tap on the anchor view (default: `true`)  
 - `closeOnTap` - enable/disable closing on tap on popup    
 - `closeOnTapOutside` - enable/disable closing on tap on popup's background     
 - `isBackgroundPassthrough` - enable/disable taps passing through the popup's background     

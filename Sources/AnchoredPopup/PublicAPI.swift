@@ -55,6 +55,9 @@ public struct PopupParameters {
     var position: AnchoredPopupPosition = .screenRelative()
     var animation: Animation = .easeIn(duration: 0.3)
 
+    /// Should open popup on tap on the anchor view
+    var openOnTap: Bool = true
+
     /// Should close on tap anywhere inside the popup
     var closeOnTap: Bool = true
 
@@ -76,6 +79,13 @@ public struct PopupParameters {
     public func animation(_ animation: Animation) -> PopupParameters {
         var params = self
         params.animation = animation
+        return params
+    }
+
+    /// Should open popup on tap on the anchor view - default is `true`
+    public func openOnTap(_ openOnTap: Bool) -> PopupParameters {
+        var params = self
+        params.openOnTap = openOnTap
         return params
     }
 

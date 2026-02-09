@@ -158,14 +158,14 @@ struct TriggerButton<V>: ViewModifier where V: View {
                 }
             }
             .simultaneousGesture(
-                TapGesture().onEnded { gesture in
+                params.openOnTap ? TapGesture().onEnded { _ in
                     // trigger displaying animation only if popup is hidden
                     let currentState = AnchoredAnimationManager.shared.animations.first(where: { $0.id == id })?.state
                     if currentState == .hidden || currentState == nil {
                         hideKeyboard()
                         AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .growing)
                     }
-                }
+                } : nil
             )
             .onReceive(AnchoredAnimationManager.shared.statePublisher(for: id)) { animation in
                 if animation?.state == .growing {
