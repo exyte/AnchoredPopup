@@ -33,7 +33,8 @@ public class AnchoredPopup {
 // - MARK: Customization parameters
 
 public enum AnchoredPopupPosition {
-    case anchorRelative(_ point: UnitPoint) // popup view will be aligned to anchor view at corresponding proportion
+    case anchorRelative(_ point: UnitPoint, keepInScreenBounds: Bool = true) // popup view will be aligned to anchor view at corresponding proportion
+    case auto // similar to `anchorRelative(..., keepInScreenBounds: true)` but auto-picks the best anchor `UnitPoint` to keep the popup within safe area
     case screenRelative(_ point: UnitPoint = .center) // popup view will be aligned to whole screen
     case absolute(_ point: UnitPoint, position: CGPoint) // popup will be placed at exact screen position, with point specifying which part of popup aligns to that position
 }
@@ -53,6 +54,9 @@ public enum AnchoredPopupBackground {
 public struct PopupParameters {
     var position: AnchoredPopupPosition = .screenRelative()
     var animation: Animation = .easeIn(duration: 0.3)
+
+    /// Should open popup on tap on the anchor view
+    var openOnTap: Bool = true
 
     /// Should close on tap anywhere inside the popup
     var closeOnTap: Bool = true
@@ -75,6 +79,13 @@ public struct PopupParameters {
     public func animation(_ animation: Animation) -> PopupParameters {
         var params = self
         params.animation = animation
+        return params
+    }
+
+    /// Should open popup on tap on the anchor view - default is `true`
+    public func openOnTap(_ openOnTap: Bool) -> PopupParameters {
+        var params = self
+        params.openOnTap = openOnTap
         return params
     }
 

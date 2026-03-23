@@ -40,6 +40,7 @@ Customized example:
     $0.position(.anchorRelative(.bottomLeading))
         .background(.none)
         .isBackgroundPassthrough(true)
+        .openOnTap(true)
         .closeOnTap(false)
 }
 ```
@@ -50,10 +51,12 @@ Customized example:
 
 ### Optional parameters
 - `position` - determines where the popup appears on screen. Available options:
-    * `.anchorRelative(UnitPoint)` - aligns the popup relative to the anchor view at the corresponding proportion
+    * `.anchorRelative(UnitPoint, keepInScreenBounds: Bool = true)` - aligns the popup relative to the anchor view at the corresponding proportion; when `keepInScreenBounds` is `true` it will try to keep the popup within the screen safe area
+    * `.auto` - like `.anchorRelative(..., keepInScreenBounds: true)`, but automatically picks the best `UnitPoint` (corner) to keep the popup within the safe area
     * `.screenRelative(UnitPoint)` - aligns the popup relative to the whole screen (default: `.center`)
     * `.absolute(UnitPoint, position: CGPoint)` - places the popup at an exact screen coordinate, with `UnitPoint` specifying which part of the popup aligns to that position
 - `animation` - appear/disappear animation   
+- `openOnTap` - enable/disable opening on tap on the anchor view (default: `true`)  
 - `closeOnTap` - enable/disable closing on tap on popup    
 - `closeOnTapOutside` - enable/disable closing on tap on popup's background     
 - `isBackgroundPassthrough` - enable/disable taps passing through the popup's background     
@@ -166,7 +169,7 @@ dependencies: [
 
 ## Requirements
 
-* iOS 17.0+ 
+* iOS 16.0+ 
 
 ## Our other open source SwiftUI libraries
 [PopupView](https://github.com/exyte/PopupView) - Toasts and popups library    
