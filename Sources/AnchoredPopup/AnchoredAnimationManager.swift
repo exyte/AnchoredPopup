@@ -18,7 +18,7 @@ class AnchoredAnimationManager: ObservableObject {
 
     struct AnimationItem: Equatable {
         var id: String
-        var buttonFrame: IntRect
+        var buttonFrame: CGRect
         var state: GrowingViewState
 
         static func == (lhs: AnimationItem, rhs: AnimationItem) -> Bool {
@@ -46,9 +46,9 @@ class AnchoredAnimationManager: ObservableObject {
 
    func updateFrame(for id: String, frame: CGRect) {
         if let index = animations.firstIndex(where: { $0.id == id }) {
-            animations[index].buttonFrame = frame.toIntRect()
+            animations[index].buttonFrame = frame
         } else {
-            animations.append(AnimationItem(id: id, buttonFrame: frame.toIntRect(), state: .hidden))
+            animations.append(AnimationItem(id: id, buttonFrame: frame, state: .hidden))
         }
     }
 
@@ -200,8 +200,8 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
     @State private var animatableScale: CGSize = .zero
     @State private var animatableOffset: CGSize = .zero
 
-    @State private var triggerButtonFrame: IntRect = .zero
-    @State private var contentSize: IntSize = .zero
+    @State private var triggerButtonFrame: CGRect = .zero
+    @State private var contentSize: CGSize = .zero
 
     @State private var isAnimating = false
 
@@ -211,7 +211,7 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
                 .overlay(GeometryReader { geo in
                     Color.clear.onAppear {
                         DispatchQueue.main.async {
-                            contentSize = geo.size.toIntSize()
+                            contentSize = geo.size
                             if let animation = AnchoredAnimationManager.shared.animations.first(where: { $0.id == id }) {
                                 setupAndLaunchAnimation(animation)
                             }
@@ -220,7 +220,8 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
                 })
                 .scaleEffect(animatableScale)
                 .offset(animatableOffset)
-                .position(x: triggerButtonFrame.floatMidX, y: triggerButtonFrame.floatMidY)
+                .offset(x: triggerButtonFrame.midX - UIScreen.main.bounds.width / 2,
+                        y: triggerButtonFrame.midY - UIScreen.main.bounds.height / 2)
                 .opacity(animatableOpacity)
                 .ignoresSafeArea()
                 .simultaneousGesture(
@@ -233,7 +234,7 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
                 )
         }
         .onReceive(AnchoredAnimationManager.shared.framePublisher(for: id)) { animation in
-            if let animation, triggerButtonFrame == .zero {
+            if let animation, triggerButtonFrame != animation.buttonFrame {
                 triggerButtonFrame = animation.buttonFrame
             }
         }
@@ -313,17 +314,17 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
 
     /// start with popup matching trigger's position and size
     private func calculateHiddenScale() -> CGSize {
-        let tw = triggerButtonFrame.floatWidth
-        let th = triggerButtonFrame.floatHeight
-        let pw = contentSize.floatWidth
-        let ph = contentSize.floatHeight
+        let tw = triggerButtonFrame.width
+        let th = triggerButtonFrame.height
+        let pw = contentSize.width
+        let ph = contentSize.height
         return CGSize(width: tw/pw, height: th/ph)
     }
 
     /// starting position is center of the trigger
     private func calculateDisplayedOffset() -> CGSize {
-        let cw = contentSize.floatWidth
-        let ch = contentSize.floatHeight
+        let cw = contentSize.width
+        let ch = contentSize.height
 
         switch params.position {
         case .anchorRelative(let p, let keepInScreenBounds):
@@ -348,8 +349,8 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
             )
 
         case .screenRelative(let p):
-            let tx = triggerButtonFrame.floatMidX
-            let ty = triggerButtonFrame.floatMidY
+            let tx = triggerButtonFrame.midX
+            let ty = triggerButtonFrame.midY
             let sw = UIScreen.main.bounds.width
             let sh = UIScreen.main.bounds.height
 
@@ -364,8 +365,8 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
             return CGSize(width: -tx + sw * p.x + cw/2 * px, height: -ty + sh * p.y + ch/2 * py)
 
         case .absolute(let point, let position):
-            let tx = triggerButtonFrame.floatMidX
-            let ty = triggerButtonFrame.floatMidY
+            let tx = triggerButtonFrame.midX
+            let ty = triggerButtonFrame.midY
 
             // normalization: (0, 1) -> (1, -1)
             let px = -2 * point.x + 1
@@ -384,8 +385,8 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
         contentWidth cw: CGFloat,
         contentHeight ch: CGFloat
     ) -> CGSize {
-        let tw = triggerButtonFrame.floatWidth
-        let th = triggerButtonFrame.floatHeight
+        let tw = triggerButtonFrame.width
+        let th = triggerButtonFrame.height
 
         // difference between centers
         let w = cw/2 - tw/2
@@ -406,7 +407,7 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
         contentHeight ch: CGFloat,
         bounds: CGRect
     ) -> CGSize {
-        let triggerCenter = CGPoint(x: triggerButtonFrame.floatMidX, y: triggerButtonFrame.floatMidY)
+        let triggerCenter = CGPoint(x: triggerButtonFrame.midX, y: triggerButtonFrame.midY)
         let desiredCenter = CGPoint(x: triggerCenter.x + baseOffset.width, y: triggerCenter.y + baseOffset.height)
 
         let halfW = cw / 2
@@ -431,7 +432,7 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
 
     private func autoAnchorPoint(contentWidth cw: CGFloat, contentHeight ch: CGFloat, bounds: CGRect) -> UnitPoint {
         let candidates: [UnitPoint] = [.topLeading, .topTrailing, .bottomLeading, .bottomTrailing]
-        let triggerCenter = CGPoint(x: triggerButtonFrame.floatMidX, y: triggerButtonFrame.floatMidY)
+        let triggerCenter = CGPoint(x: triggerButtonFrame.midX, y: triggerButtonFrame.midY)
 
         // Stay on the same side of the screen as the anchor
         let preferredX: CGFloat = triggerCenter.x < bounds.midX ? 0 : 1
