@@ -20,19 +20,14 @@ class AnchoredAnimationManager: ObservableObject {
         var id: String
         var buttonFrame: CGRect
         var state: GrowingViewState
-
-        static func == (lhs: AnimationItem, rhs: AnimationItem) -> Bool {
-            lhs.id == rhs.id
-            && lhs.buttonFrame == rhs.buttonFrame
-            && lhs.state == rhs.state
-        }
     }
 
     @Published var animations: [AnimationItem] = []
 
     private var statePublishers: [String: CurrentValueSubject<AnimationItem?, Never>] = [:]
     private var framePublishers: [String: CurrentValueSubject<AnimationItem?, Never>] = [:]
-    private var cancellables = Set<AnyCancellable>()
+    private var stateCancellables: [String: AnyCancellable] = [:]
+    private var frameCancellables: [String: AnyCancellable] = [:]
 
     static subscript(id: String) -> AnimationItem? {
         shared.animations.first { $0.id == id }
@@ -44,7 +39,7 @@ class AnchoredAnimationManager: ObservableObject {
         }
     }
 
-   func updateFrame(for id: String, frame: CGRect) {
+    func updateFrame(for id: String, frame: CGRect) {
         if let index = animations.firstIndex(where: { $0.id == id }) {
             animations[index].buttonFrame = frame
         } else {
@@ -57,37 +52,12 @@ class AnchoredAnimationManager: ObservableObject {
             return publisher
         }
 
-        // Track the last emitted value for comparison
-        var lastValue: AnimationItem? = nil
-
-        // Create a CurrentValueSubject to hold the current value
         let subject = CurrentValueSubject<AnimationItem?, Never>(nil)
 
-        // Generate the publisher and handle state changes
-        $animations
-            .map { animations in
-                animations.first { $0.id == id }
-            }
-            .compactMap { $0 }
-            .filter { newItem in
-                if let last = lastValue {
-                    // Only emit if the item has changed from the last value
-                    if last.state != newItem.state {
-                        lastValue = newItem // Update the last value
-                        return true // Emit if there's a change
-                    } else {
-                        return false // Don't emit if no change
-                    }
-                } else {
-                    lastValue = newItem // Set initial value
-                    return true // Emit the first time
-                }
-            }
-            .sink { newItem in
-                // Emit the value to the CurrentValueSubject
-                subject.send(newItem)
-            }
-            .store(in: &cancellables)
+        stateCancellables[id] = $animations
+            .compactMap { animations in animations.first { $0.id == id } }
+            .removeDuplicates { $0.state == $1.state }
+            .sink { subject.send($0) }
 
         statePublishers[id] = subject
         return subject
@@ -98,49 +68,30 @@ class AnchoredAnimationManager: ObservableObject {
             return publisher
         }
 
-        // Track the last emitted value for comparison
-        var lastValue: AnimationItem? = nil
-
-        // Create a CurrentValueSubject to hold the current value
         let subject = CurrentValueSubject<AnimationItem?, Never>(nil)
 
-        // Generate the publisher and handle state changes
-        $animations
-            .map { animations in
-                animations.first { $0.id == id }
-            }
-            .compactMap { $0 }
-            .filter { newItem in
-                if let last = lastValue {
-                    // Only emit if the item has changed from the last value
-                    if last.buttonFrame != newItem.buttonFrame {
-                        lastValue = newItem // Update the last value
-                        return true // Emit if there's a change
-                    } else {
-                        return false // Don't emit if no change
-                    }
-                } else {
-                    lastValue = newItem // Set initial value
-                    return true // Emit the first time
-                }
-            }
-            .sink { newItem in
-                // Emit the value to the CurrentValueSubject
-                subject.send(newItem)
-            }
-            .store(in: &cancellables)
+        frameCancellables[id] = $animations
+            .compactMap { animations in animations.first { $0.id == id } }
+            .removeDuplicates { $0.buttonFrame == $1.buttonFrame }
+            .sink { subject.send($0) }
 
         framePublishers[id] = subject
         return subject
     }
+
+    func cleanup(for id: String) {
+        animations.removeAll { $0.id == id }
+        statePublishers.removeValue(forKey: id)
+        framePublishers.removeValue(forKey: id)
+        stateCancellables.removeValue(forKey: id)
+        frameCancellables.removeValue(forKey: id)
+    }
 }
 
 struct TriggerButton<V>: ViewModifier where V: View {
-    @State var id: String
+    var id: String
     var params: PopupParameters
     @ViewBuilder var contentBuilder: () -> V
-
-    @State private var cancellable: AnyCancellable?
 
     func body(content: Content) -> some View {
         content
@@ -151,7 +102,7 @@ struct TriggerButton<V>: ViewModifier where V: View {
                 }
             }
             .onPreferenceChange(ButtonFramePreferenceKey.self) { value in
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     if id == value.id {
                         AnchoredAnimationManager.shared.updateFrame(for: value.id, frame: value.frame)
                     }
@@ -171,7 +122,7 @@ struct TriggerButton<V>: ViewModifier where V: View {
                 if animation?.state == .growing {
                     WindowManager.openNewWindow(id: id, closeOnTapOutside: params.closeOnTapOutside, isPassthrough: params.isPassthrough) {
                         ZStack {
-                            AnimatedBackgroundView(id: $id, background: params.background)
+                            AnimatedBackgroundView(id: id, background: params.background)
                                 .simultaneousGesture(
                                     TapGesture().onEnded {
                                         if params.closeOnTapOutside {
@@ -210,7 +161,7 @@ fileprivate struct AnchoredAnimationView<V>: View where V: View {
             contentBuilder()
                 .overlay(GeometryReader { geo in
                     Color.clear.onAppear {
-                        DispatchQueue.main.async {
+                        Task { @MainActor in
                             contentSize = geo.size
                             if let animation = AnchoredAnimationManager.shared.animations.first(where: { $0.id == id }) {
                                 setupAndLaunchAnimation(animation)

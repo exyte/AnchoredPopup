@@ -23,8 +23,9 @@ struct ButtonFramePreferenceKey: PreferenceKey {
     static let defaultValue: ButtonFrameInfo = ButtonFrameInfo(id: "", frame: .zero)
 
     static func reduce(value: inout ButtonFrameInfo, nextValue: () -> ButtonFrameInfo) {
-        if value != nextValue() {
-            value = nextValue()
+        let next = nextValue()
+        if value != next {
+            value = next
         }
     }
 }
@@ -32,7 +33,7 @@ struct ButtonFramePreferenceKey: PreferenceKey {
 // MARK: - AnimatedBackgroundView
 
 struct AnimatedBackgroundView: View {
-    @Binding var id: String
+    var id: String
     var background: AnchoredPopupBackground
 
     @State private var animatableOpacity: CGFloat = 0
@@ -58,14 +59,14 @@ struct AnimatedBackgroundView: View {
                     setupAndLaunchAnimation(animation)
                 }
             }
-            
+
             PopupHitTestingBackground()
                 .ignoresSafeArea()
         }
     }
 
     private func setupAndLaunchAnimation(_ animation: AnchoredAnimationManager.AnimationItem) {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             withAnimation(.easeInOut(duration: 0.2)) {
                 if animation.state == .growing {
                     setDisplayedState()
@@ -93,6 +94,6 @@ struct PopupHitTestingBackground: UIViewRepresentable {
         view.isUserInteractionEnabled = false
         return view
     }
-    
+
     func updateUIView(_ uiView: UIView, context: Context) {}
 }
