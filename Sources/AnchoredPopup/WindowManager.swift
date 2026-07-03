@@ -35,7 +35,6 @@ final class WindowManager {
     static func closeWindow(id: String) {
         shared.windows[id]?.isHidden = true
         shared.windows.removeValue(forKey: id)
-        AnchoredAnimationManager.shared.cleanup(for: id)
     }
 }
 

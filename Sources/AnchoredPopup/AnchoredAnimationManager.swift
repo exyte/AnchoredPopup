@@ -79,11 +79,4 @@ class AnchoredAnimationManager: ObservableObject {
         return subject
     }
 
-    func cleanup(for id: String) {
-        animations.removeAll { $0.id == id }
-        statePublishers.removeValue(forKey: id)
-        framePublishers.removeValue(forKey: id)
-        stateCancellables.removeValue(forKey: id)
-        frameCancellables.removeValue(forKey: id)
-    }
 }
