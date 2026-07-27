@@ -66,6 +66,7 @@ struct MainView: View {
                         ProfileView()
                     } customize: {
                         $0.closeOnTap(false)
+                            .displayMode(.sheet)
                     }
                     .overlay(alignment: .topTrailing) {
                         Circle().styled(.popupViolet, border: .white, 4)

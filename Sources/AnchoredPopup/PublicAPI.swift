@@ -51,7 +51,15 @@ public enum AnchoredPopupBackground {
     }
 }
 
+public enum DisplayMode: Identifiable {
+    case sheet // using .fullscreenSheet
+    case window // using UIWindow
+
+    public var id: Self { self }
+}
+
 public struct PopupParameters {
+    var displayMode: DisplayMode = .window
     var position: AnchoredPopupPosition = .screenRelative()
     var animation: Animation = .easeIn(duration: 0.3)
 
@@ -68,6 +76,12 @@ public struct PopupParameters {
     var isPassthrough: Bool = false
 
     var background: AnchoredPopupBackground = .blur()
+
+    public func displayMode(_ displayMode: DisplayMode) -> Self {
+        var params = self
+        params.displayMode = displayMode
+        return params
+    }
 
     public func position(_ position: AnchoredPopupPosition) -> PopupParameters {
         var params = self

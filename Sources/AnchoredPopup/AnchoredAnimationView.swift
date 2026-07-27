@@ -72,46 +72,23 @@ struct AnchoredAnimationView<V>: View where V: View {
             isAnimating = true
             setHiddenState()
 
-            if #available(iOS 17.0, *) {
-                withAnimation(params.animation) {
-                    setDisplayedState()
-                } completion: {
-                    // only update state if in growing state and not interrupted by shrinking
-                    let currentState = AnchoredAnimationManager.shared.animations.first(where: { $0.id == id })?.state
-                    if currentState == .growing {
-                        AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .displayed)
-                    }
-                    isAnimating = false
+            withAnimation(params.animation) {
+                setDisplayedState()
+            } completion: {
+                // only update state if in growing state and not interrupted by shrinking
+                let currentState = AnchoredAnimationManager.shared.animations.first(where: { $0.id == id })?.state
+                if currentState == .growing {
+                    AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .displayed)
                 }
-            } else {
-                withAnimation(params.animation) {
-                    setDisplayedState()
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    let currentState = AnchoredAnimationManager.shared.animations.first(where: { $0.id == id })?.state
-                    if currentState == .growing {
-                        AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .displayed)
-                    }
-                    isAnimating = false
-                }
+                isAnimating = false
             }
         } else if animation.state == .shrinking {
             isAnimating = true
-            if #available(iOS 17.0, *) {
-                withAnimation(params.animation) {
-                    setHiddenState()
-                } completion: {
-                    AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .hidden)
-                    isAnimating = false
-                }
-            } else {
-                withAnimation(params.animation) {
-                    setHiddenState()
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .hidden)
-                    isAnimating = false
-                }
+            withAnimation(params.animation) {
+                setHiddenState()
+            } completion: {
+                AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .hidden)
+                isAnimating = false
             }
         }
     }

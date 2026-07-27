@@ -37,25 +37,62 @@ struct TriggerButton<V>: ViewModifier where V: View {
                     }
                 } : nil
             )
-            .onReceive(AnchoredAnimationManager.shared.statePublisher(for: id)) { animation in
-                if animation?.state == .growing {
-                    WindowManager.openNewWindow(id: id, closeOnTapOutside: params.closeOnTapOutside, isPassthrough: params.isPassthrough) {
-                        ZStack {
-                            AnimatedBackgroundView(id: id, background: params.background)
-                                .simultaneousGesture(
-                                    TapGesture().onEnded {
-                                        if params.closeOnTapOutside {
-                                            // trigger hiding animation
-                                            AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .shrinking)
-                                        }
-                                    }
-                                )
-                            AnchoredAnimationView(id: id, params: params, contentBuilder: contentBuilder)
+            .modifier(PopupPresenter(id: id, params: params, contentBuilder: contentBuilder))
+    }
+}
+
+struct PopupPresenter<V>: ViewModifier where V: View {
+    var id: String
+    var params: PopupParameters
+    @ViewBuilder var contentBuilder: () -> V
+
+    @State private var showSheet = false
+
+    func body(content: Content) -> some View {
+        switch params.displayMode {
+        case .sheet:
+            content
+                .onReceive(AnchoredAnimationManager.shared.statePublisher(for: id)) { animation in
+                    if animation?.state == .growing {
+                        showSheet = true
+                    } else if animation?.state == .hidden {
+                        showSheet = false
+                    }
+                }
+                .transparentNonAnimatingFullScreenCover(isPresented: $showSheet, onDismiss: {
+                    AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .hidden)
+                }) {
+                    popupWithBackground
+                        .environment(\.anchoredPopupDismiss) {
+                            AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .shrinking)
+                        }
+                }
+        case .window:
+            content
+                .onReceive(AnchoredAnimationManager.shared.statePublisher(for: id)) { animation in
+                    if animation?.state == .growing {
+                        WindowManager.showInNewWindow(id: id, closeOnTapOutside: params.closeOnTapOutside, isPassthrough: params.isPassthrough) {
+                            popupWithBackground
+                        }
+                    } else if animation?.state == .hidden {
+                        WindowManager.closeWindow(id: id)
+                    }
+                }
+        }
+    }
+
+    var popupWithBackground: some View {
+        ZStack {
+            AnimatedBackgroundView(id: id, background: params.background)
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        if params.closeOnTapOutside {
+                            // trigger hiding animation
+                            AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .shrinking)
                         }
                     }
-                } else if animation?.state == .hidden {
-                    WindowManager.closeWindow(id: id)
-                }
-            }
+                )
+            AnchoredAnimationView(id: id, params: params, contentBuilder: contentBuilder)
+        }
     }
 }

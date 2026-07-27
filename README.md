@@ -45,6 +45,50 @@ Customized example:
 }
 ```
 
+### Display modes
+
+There are 2 ways to display a popup: using SwiftUI's fullscreenSheet or using UIKit's UIWindow. There are pros and cons both, here is a table.
+<table>
+    <thead>
+        <tr>
+            <th></th>
+            <th>Sheet</th>
+            <th>Window</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr align=center>
+        <th>Show on top of navbar</th>
+            <td> ✅ </td>
+            <td> ✅ </td>
+        </tr>
+        <tr align=center>
+        <th>Show on top of sheet</th>
+            <td> ❌ </td>
+            <td> ✅ </td>
+        </tr>
+        <tr align=center>
+        <th>Show multiple popups</th>
+            <td> ❌ </td>
+            <td> ✅ </td>
+        </tr>
+        <tr align=center>
+        <th>Taps "pass through" the transparent bg</th>
+            <td> ❌ </td>
+            <td> ✅ </td>
+        </tr>
+        <tr align=center>
+        <th>SwiftUI @State update mechanism works as expected</th>
+            <td> ✅ </td>
+            <td> ❌ </td>
+        </tr>
+    </tbody>
+</table>
+
+Basically, if you want normal SwiftUI runtime, use .sheet, but this way you can only display one popup at a time, which is ok for most cases. 
+- if you have one complicated popup, use .sheet
+- if you have multiple simple popups, use .window
+- if you have multiple complicated popups - use .sheet, and do not stack them: hide the previous one when showing next one.
 ### Required parameters - useAsPopupAnchor 
 - `id` - A unique `String` to store everything related to this animation, you can use it to manually launch animations using this func `AnchoredPopup.launchAnchoredAnimation`    
 - `contentBuilder` - popup body builder
@@ -169,7 +213,7 @@ dependencies: [
 
 ## Requirements
 
-* iOS 16.0+ 
+* iOS 17.0+ 
 
 ## Our other open source SwiftUI libraries
 [PopupView](https://github.com/exyte/PopupView) - Toasts and popups library    

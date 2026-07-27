@@ -12,7 +12,7 @@ final class WindowManager {
     static let shared = WindowManager()
     var windows: [String: UIWindow] = [:]
 
-    static func openNewWindow<Content: View>(id: String, closeOnTapOutside: Bool, isPassthrough: Bool, content: ()->Content) {
+    static func showInNewWindow<Content: View>(id: String, closeOnTapOutside: Bool, isPassthrough: Bool, content: ()->Content) {
         guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
             print("No valid scene available")
             return
