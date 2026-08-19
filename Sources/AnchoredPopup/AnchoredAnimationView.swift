@@ -36,8 +36,8 @@ struct AnchoredAnimationView<V>: View where V: View {
                 })
                 .scaleEffect(animatableScale)
                 .offset(animatableOffset)
-                .offset(x: triggerButtonFrame.midX - UIScreen.main.bounds.width / 2,
-                        y: triggerButtonFrame.midY - UIScreen.main.bounds.height / 2)
+                .offset(x: triggerButtonFrame.midX - windowBounds.width / 2,
+                        y: triggerButtonFrame.midY - windowBounds.height / 2)
                 .opacity(animatableOpacity)
                 .ignoresSafeArea()
                 .simultaneousGesture(
@@ -144,8 +144,8 @@ struct AnchoredAnimationView<V>: View where V: View {
         case .screenRelative(let p):
             let tx = triggerButtonFrame.midX
             let ty = triggerButtonFrame.midY
-            let sw = UIScreen.main.bounds.width
-            let sh = UIScreen.main.bounds.height
+            let sw = windowBounds.width
+            let sh = windowBounds.height
 
             // normalization: (0, 1) -> (1, -1)
             let px = -2 * p.x + 1
@@ -250,6 +250,10 @@ struct AnchoredAnimationView<V>: View where V: View {
         }
 
         return candidates.min(by: { overflowScore(for: $0) < overflowScore(for: $1) }) ?? .bottomLeading
+    }
+
+    private var windowBounds: CGRect {
+        WindowManager.shared.windows[id]?.bounds ?? UIScreen.main.bounds
     }
 
     private func safeAreaBounds() -> CGRect {
