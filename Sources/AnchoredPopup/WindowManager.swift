@@ -67,9 +67,11 @@ class UIPassthroughWindow: UIWindow {
 
         let layerHitTestResult = vc.view.layer.hitTest(vc.view.convert(point, from: self))
         let superlayerDelegateName = layerHitTestResult?.superlayer?.delegate.map { String(describing: type(of: $0)) }
-        let didTapBackground = superlayerDelegateName?.contains(String(describing: PopupHitTestingBackground.self)) ?? false
+        let didHitBackground = superlayerDelegateName?.contains(String(describing: PopupHitTestingBackground.self)) ?? false
+        // .touches events include touchscreen taps as well as mouse clicks
+        let isTap = event?.type == .touches
 
-        if didTapBackground {
+        if isTap && didHitBackground {
             if closeOnTapOutside {
                 AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .shrinking)
             }
