@@ -35,5 +35,6 @@ public struct Blur: View {
     public var body: some View {
         Backdrop()
             .blur(radius: radius, opaque: opaque)
+            .overlay(Color.gray.opacity(0.3))
     }
 }

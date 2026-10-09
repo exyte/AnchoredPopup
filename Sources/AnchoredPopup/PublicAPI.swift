@@ -32,10 +32,16 @@ public class AnchoredPopup {
 
 // - MARK: Customization parameters
 
+public enum AnchoredPopupBoundsMode: Equatable {
+    case screen // bounds are the whole window
+    case safeArea // bounds are the window's safe area
+    case free // no bounds constraint, popup can extend beyond the safe area/screen
+}
+
 public enum AnchoredPopupPosition {
-    case anchorRelative(_ point: UnitPoint, keepInScreenBounds: Bool = true) // popup view will be aligned to anchor view at corresponding proportion
-    case auto // similar to `anchorRelative(..., keepInScreenBounds: true)` but auto-picks the best anchor `UnitPoint` to keep the popup within safe area
-    case screenRelative(_ point: UnitPoint = .center) // popup view will be aligned to whole screen
+    case anchorRelative(_ point: UnitPoint, boundsMode: AnchoredPopupBoundsMode = .free) // popup view will be aligned to anchor view at corresponding proportion
+    case auto // similar to `anchorRelative(...)` but auto-picks the best anchor `UnitPoint` to keep the popup within safe area
+    case screenRelative(_ point: UnitPoint = .center, boundsMode: AnchoredPopupBoundsMode = .screen) // popup view will be aligned relative to the bounds described by `boundsMode`
     case absolute(_ point: UnitPoint, position: CGPoint) // popup will be placed at exact screen position, with point specifying which part of popup aligns to that position
 }
 

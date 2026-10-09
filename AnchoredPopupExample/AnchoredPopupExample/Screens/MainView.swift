@@ -42,7 +42,7 @@ struct MainView: View {
                     .useAsPopupAnchor(id: "congratulations_view") {
                         CongratulationsView()
                     } customize: {
-                        $0.position(.screenRelative())
+                        $0.position(.screenRelative(boundsMode: .safeArea))
                             .closeOnTap(false)
                             .closeOnTapOutside(true)
                     }

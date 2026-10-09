@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct AnchoredAnimationView<V>: View where V: View {
+    @Environment(\.anchoredPopupSafeAreaInsets) var safeAreaInsets
+    @Environment(\.anchoredPopupContentSize) var containerSize
+
     var id: String
     var params: PopupParameters
     var contentBuilder: () -> V
@@ -39,7 +42,6 @@ struct AnchoredAnimationView<V>: View where V: View {
                 .offset(x: triggerButtonFrame.midX - windowBounds.width / 2,
                         y: triggerButtonFrame.midY - windowBounds.height / 2)
                 .opacity(animatableOpacity)
-                .ignoresSafeArea()
                 .simultaneousGesture(
                     TapGesture().onEnded { gesture in
                         if params.closeOnTap {
@@ -68,7 +70,8 @@ struct AnchoredAnimationView<V>: View where V: View {
         // but allow shrinking to interrupt growing
         if isAnimating && animation.state == .growing { return }
 
-        if animation.state == .growing {
+        switch animation.state {
+        case .growing:
             isAnimating = true
             setHiddenState()
 
@@ -82,7 +85,8 @@ struct AnchoredAnimationView<V>: View where V: View {
                 }
                 isAnimating = false
             }
-        } else if animation.state == .shrinking {
+
+        case .shrinking:
             isAnimating = true
             withAnimation(params.animation) {
                 setHiddenState()
@@ -90,6 +94,15 @@ struct AnchoredAnimationView<V>: View where V: View {
                 AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .hidden)
                 isAnimating = false
             }
+
+        case .displayed:
+            // a view that mounts after another instance already finished growing
+            // (e.g. a previous instance is still tearing down when a new one appears)
+            // needs to snap straight to the displayed state instead of staying hidden
+            setDisplayedState()
+
+        case .hidden:
+            setHiddenState()
         }
     }
 
@@ -120,14 +133,14 @@ struct AnchoredAnimationView<V>: View where V: View {
         let ch = contentSize.height
 
         switch params.position {
-        case .anchorRelative(let p, let keepInScreenBounds):
+        case .anchorRelative(let p, let boundsMode):
             let baseOffset = anchorRelativeBaseOffset(point: p, contentWidth: cw, contentHeight: ch)
-            guard keepInScreenBounds else { return baseOffset }
+            guard boundsMode != .free else { return baseOffset }
             return clampedOffsetKeepingPopupInBounds(
                 baseOffset: baseOffset,
                 contentWidth: cw,
                 contentHeight: ch,
-                bounds: safeAreaBounds()
+                bounds: bounds(for: boundsMode)
             )
 
         case .auto:
@@ -141,11 +154,10 @@ struct AnchoredAnimationView<V>: View where V: View {
                 bounds: bounds
             )
 
-        case .screenRelative(let p):
+        case .screenRelative(let p, let boundsMode):
+            let bounds = bounds(for: boundsMode)
             let tx = triggerButtonFrame.midX
             let ty = triggerButtonFrame.midY
-            let sw = windowBounds.width
-            let sh = windowBounds.height
 
             // normalization: (0, 1) -> (1, -1)
             let px = -2 * p.x + 1
@@ -153,9 +165,16 @@ struct AnchoredAnimationView<V>: View where V: View {
 
             // the content view center is currently same as anchor view
             // -tx: put middle of popup into (0,0)
-            // sw * p.x: put middle of popup into required unit point of screen
-            // cw/2 * px: align required unit point of popup with the screen
-            return CGSize(width: -tx + sw * p.x + cw/2 * px, height: -ty + sh * p.y + ch/2 * py)
+            // bounds.minX + bounds.width * p.x: put middle of popup into required unit point of the bounds
+            // cw/2 * px: align required unit point of popup with the bounds
+            let rawOffset = CGSize(width: -tx + bounds.minX + bounds.width * p.x + cw/2 * px, height: -ty + bounds.minY + bounds.height * p.y + ch/2 * py)
+            guard boundsMode != .free else { return rawOffset }
+            return clampedOffsetKeepingPopupInBounds(
+                baseOffset: rawOffset,
+                contentWidth: cw,
+                contentHeight: ch,
+                bounds: bounds
+            )
 
         case .absolute(let point, let position):
             let tx = triggerButtonFrame.midX
@@ -253,14 +272,21 @@ struct AnchoredAnimationView<V>: View where V: View {
     }
 
     private var windowBounds: CGRect {
-        WindowManager.shared.windows[id]?.bounds ?? UIScreen.main.bounds
+        CGRect(origin: .zero, size: containerSize)
     }
 
     private func safeAreaBounds() -> CGRect {
-        if let window = WindowManager.shared.windows[id] {
-            return window.bounds.inset(by: window.safeAreaInsets)
-        }
+        // for `.window` display mode the popup's own UIWindow already has the correct, live safe area
+        // insets by the time this runs; prefer it over the environment value when available
+        let insets = WindowManager.shared.windows[id]?.safeAreaInsets
+            ?? UIEdgeInsets(top: safeAreaInsets.top, left: safeAreaInsets.leading, bottom: safeAreaInsets.bottom, right: safeAreaInsets.trailing)
+        return windowBounds.inset(by: insets)
+    }
 
-        return UIScreen.main.bounds
+    private func bounds(for boundsMode: AnchoredPopupBoundsMode) -> CGRect {
+        switch boundsMode {
+        case .screen, .free: windowBounds
+        case .safeArea: safeAreaBounds()
+        }
     }
 }

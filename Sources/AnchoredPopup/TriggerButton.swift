@@ -82,17 +82,23 @@ struct PopupPresenter<V>: ViewModifier where V: View {
     }
 
     var popupWithBackground: some View {
-        ZStack {
-            AnimatedBackgroundView(id: id, background: params.background)
-                .simultaneousGesture(
-                    TapGesture().onEnded {
-                        if params.closeOnTapOutside {
-                            // trigger hiding animation
-                            AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .shrinking)
+        GeometryReader { proxy in
+            ZStack {
+                AnimatedBackgroundView(id: id, background: params.background)
+                    .simultaneousGesture(
+                        TapGesture().onEnded {
+                            if params.closeOnTapOutside {
+                                // trigger hiding animation
+                                AnchoredAnimationManager.shared.changeStateForAnimation(for: id, state: .shrinking)
+                            }
                         }
-                    }
-                )
-            AnchoredAnimationView(id: id, params: params, contentBuilder: contentBuilder)
+                    )
+                AnchoredAnimationView(id: id, params: params, contentBuilder: contentBuilder)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .environment(\.anchoredPopupSafeAreaInsets, proxy.safeAreaInsets)
+            .environment(\.anchoredPopupContentSize, proxy.size)
         }
+        .ignoresSafeArea()
     }
 }

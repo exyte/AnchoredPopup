@@ -26,6 +26,7 @@ final class WindowManager {
             }
         let controller = UIHostingController(rootView: root)
         controller.view.backgroundColor = .clear
+        controller.safeAreaRegions = []
         window.rootViewController = controller
         window.windowLevel = .alert + 1
         window.makeKeyAndVisible()

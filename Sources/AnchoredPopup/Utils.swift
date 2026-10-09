@@ -11,6 +11,34 @@ import SwiftUI
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }
 
+// MARK: - Safe area
+
+struct AnchoredPopupSafeAreaInsetsKey: EnvironmentKey {
+    static let defaultValue: EdgeInsets = EdgeInsets()
+}
+
+extension EnvironmentValues {
+    var anchoredPopupSafeAreaInsets: EdgeInsets {
+        get { self[AnchoredPopupSafeAreaInsetsKey.self] }
+        set { self[AnchoredPopupSafeAreaInsetsKey.self] = newValue }
+    }
+}
+
+/// The real, live size of the popup's root container (its window in `.window` display mode,
+/// or the full screen cover in `.sheet` display mode). `WindowManager`'s `UIWindow.bounds` and
+/// `UIScreen.main.bounds` can both diverge from this, so the anchor-centering math reads this
+/// instead to stay correct regardless of display mode or device (e.g. iPhone Duo).
+struct AnchoredPopupContentSizeKey: EnvironmentKey {
+    static let defaultValue: CGSize = .zero
+}
+
+extension EnvironmentValues {
+    var anchoredPopupContentSize: CGSize {
+        get { self[AnchoredPopupContentSizeKey.self] }
+        set { self[AnchoredPopupContentSizeKey.self] = newValue }
+    }
+}
+
 // MARK: - Frame getting
 
 struct ButtonFrameInfo: Equatable {

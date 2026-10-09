@@ -84,6 +84,7 @@ struct CongratulationsView: View {
             .padding(.horizontal, 24)
             .padding(.top, 20)
         }
+        .frame(maxWidth: 300)
         .padding(24, 40)
         .background {
             Color.white.cornerRadius(20)
@@ -102,43 +103,6 @@ struct CongratulationsView: View {
             .padding(16, 20)
         }
         .padding(40)
-    }
-}
-
-struct QuestionsView: View {
-
-    var body: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Help center")
-                Text("Support forum")
-                Text("YouTube videos")
-                Text("Submit feedback")
-                Text("Ask the community")
-
-                Color.popupSeparator.frame(height: 0.5)
-                    .padding(.horizontal, -4)
-
-                Text("Change language...")
-            }
-            .chakraLight(15, .popupGray5)
-            .padding(.horizontal, 20)
-            .padding(.top, 28)
-            .padding(.bottom, 4)
-
-            HStack {
-                Spacer()
-                Circle().styled(.popupLightPeriwinkle)
-                    .overlay {
-                        Image(.cross)
-                    }
-                    .size(56)
-            }
-        }
-        .background {
-            RoundedRectangle(cornerRadius: 28).styled(.popupAzureishWhite)
-        }
-        .frame(width: 230)
     }
 }
 
@@ -189,6 +153,42 @@ struct InviteView: View {
             }
             .padding(12)
         }
-        .padding(16, 38)
+    }
+}
+
+struct QuestionsView: View {
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Help center")
+                Text("Support forum")
+                Text("YouTube videos")
+                Text("Submit feedback")
+                Text("Ask the community")
+
+                Color.popupSeparator.frame(height: 0.5)
+                    .padding(.horizontal, -4)
+
+                Text("Change language...")
+            }
+            .chakraLight(15, .popupGray5)
+            .padding(.horizontal, 20)
+            .padding(.top, 28)
+            .padding(.bottom, 4)
+
+            HStack {
+                Spacer()
+                Circle().styled(.popupLightPeriwinkle)
+                    .overlay {
+                        Image(.cross)
+                    }
+                    .size(56)
+            }
+        }
+        .background {
+            RoundedRectangle(cornerRadius: 28).styled(.popupAzureishWhite)
+        }
+        .frame(width: 230)
     }
 }
