@@ -8,8 +8,7 @@
 import SwiftUI
 
 struct AnchoredAnimationView<V>: View where V: View {
-    @Environment(\.anchoredPopupSafeAreaInsets) var safeAreaInsets
-    @Environment(\.anchoredPopupContentSize) var containerSize
+    @ObservedObject private var metrics = AnchoredPopupMetrics.shared
 
     var id: String
     var params: PopupParameters
@@ -28,14 +27,19 @@ struct AnchoredAnimationView<V>: View where V: View {
         VStack {
             contentBuilder()
                 .overlay(GeometryReader { geo in
-                    Color.clear.onAppear {
-                        Task { @MainActor in
-                            contentSize = geo.size
-                            if let animation = AnchoredAnimationManager.shared.animations.first(where: { $0.id == id }) {
-                                setupAndLaunchAnimation(animation)
+                    Color.clear
+                        .onAppear {
+                            Task { @MainActor in
+                                contentSize = geo.size
+                                if let animation = AnchoredAnimationManager.shared.animations.first(where: { $0.id == id }) {
+                                    setupAndLaunchAnimation(animation)
+                                }
                             }
                         }
-                    }
+                        .onChange(of: geo.size) { _, newSize in
+                            contentSize = newSize
+                            refreshDisplayedLayoutIfNeeded()
+                        }
                 })
                 .scaleEffect(animatableScale)
                 .offset(animatableOffset)
@@ -54,6 +58,7 @@ struct AnchoredAnimationView<V>: View where V: View {
         .onReceive(AnchoredAnimationManager.shared.framePublisher(for: id)) { animation in
             if let animation, triggerButtonFrame != animation.buttonFrame {
                 triggerButtonFrame = animation.buttonFrame
+                refreshDisplayedLayoutIfNeeded()
             }
         }
         .onReceive(AnchoredAnimationManager.shared.statePublisher(for: id)) { animation in
@@ -61,6 +66,19 @@ struct AnchoredAnimationView<V>: View where V: View {
                 setupAndLaunchAnimation(animation)
             }
         }
+        .onChange(of: metrics.contentSize) { _, _ in refreshDisplayedLayoutIfNeeded() }
+        .onChange(of: metrics.safeAreaInsets) { _, _ in refreshDisplayedLayoutIfNeeded() }
+    }
+
+    /// Window size, safe area, trigger position and content size can all change independently
+    /// (rotation, fold-state changes) while the popup just sits there - re-snap it to where it
+    /// should be instead of leaving it frozen at whatever was true when it last animated.
+    private func refreshDisplayedLayoutIfNeeded() {
+        guard !isAnimating,
+              let animation = AnchoredAnimationManager.shared.animations.first(where: { $0.id == id }),
+              animation.state == .displayed else { return }
+
+        setDisplayedState()
     }
 
     private func setupAndLaunchAnimation(_ animation: AnchoredAnimationManager.AnimationItem) {
@@ -272,15 +290,14 @@ struct AnchoredAnimationView<V>: View where V: View {
     }
 
     private var windowBounds: CGRect {
-        CGRect(origin: .zero, size: containerSize)
+        CGRect(origin: .zero, size: metrics.contentSize)
     }
 
     private func safeAreaBounds() -> CGRect {
-        // for `.window` display mode the popup's own UIWindow already has the correct, live safe area
-        // insets by the time this runs; prefer it over the environment value when available
-        let insets = WindowManager.shared.windows[id]?.safeAreaInsets
-            ?? UIEdgeInsets(top: safeAreaInsets.top, left: safeAreaInsets.leading, bottom: safeAreaInsets.bottom, right: safeAreaInsets.trailing)
-        return windowBounds.inset(by: insets)
+        // never query UIWindow.safeAreaInsets imperatively - it's unreliable on foldables like iPhone Duo.
+        // `metrics` is measured live at the app's real window root, so it stays correct across rotation.
+        let insets = metrics.safeAreaInsets
+        return windowBounds.inset(by: UIEdgeInsets(top: insets.top, left: insets.leading, bottom: insets.bottom, right: insets.trailing))
     }
 
     private func bounds(for boundsMode: AnchoredPopupBoundsMode) -> CGRect {

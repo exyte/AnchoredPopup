@@ -35,10 +35,11 @@ struct ProfileView: View {
                     .frame(width: proxy.size.width, height: imageHeight(for: proxy.size.height))
                     .clipped()
 
-                Spacer()
+                ScrollView {
+                    profileDetails
+                        .padding(.horizontal, 20)
+                }
 
-                profileDetails
-                    .padding(.horizontal, 20)
                 bottomButtons
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)

@@ -11,32 +11,67 @@ import SwiftUI
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }
 
-// MARK: - Safe area
+// MARK: - Root metrics
 
-struct AnchoredPopupSafeAreaInsetsKey: EnvironmentKey {
-    static let defaultValue: EdgeInsets = EdgeInsets()
+/// Live safe area insets and size of the app's real window, kept up to date by `ScreenMetricsReader`
+/// regardless of whether a popup ends up presented via `.window` or `.sheet`. A popup's own
+/// window/full screen cover deliberately opts out of safe area resolution (`safeAreaRegions = []`)
+/// to avoid an async settling glitch, so it cannot measure its own safe area reliably - it reads
+/// these published values instead, which keeps the popup correctly positioned through rotation
+/// and fold-state changes (e.g. on iPhone Duo).
+@MainActor
+final class AnchoredPopupMetrics: ObservableObject {
+    static let shared = AnchoredPopupMetrics()
+
+    @Published var safeAreaInsets: EdgeInsets = EdgeInsets()
+    @Published var contentSize: CGSize = .zero
 }
 
-extension EnvironmentValues {
-    var anchoredPopupSafeAreaInsets: EdgeInsets {
-        get { self[AnchoredPopupSafeAreaInsetsKey.self] }
-        set { self[AnchoredPopupSafeAreaInsetsKey.self] = newValue }
+/// Measures the real app window `TriggerButton` lives in - not a window of our own - and keeps
+/// `AnchoredPopupMetrics` current. Reads `window.bounds`/`window.safeAreaInsets` from inside UIKit's
+/// own layout/safe-area callbacks (not a one-off imperative read), so the values stay correct
+/// across rotation and fold-state changes before any popup picks a display mode.
+struct ScreenMetricsReader: UIViewRepresentable {
+    final class TrackingView: UIView {
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            report()
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            report()
+        }
+
+        override func safeAreaInsetsDidChange() {
+            super.safeAreaInsetsDidChange()
+            report()
+        }
+
+        private func report() {
+            guard let window else { return }
+            let size = window.bounds.size
+            let insets = EdgeInsets(
+                top: window.safeAreaInsets.top,
+                leading: window.safeAreaInsets.left,
+                bottom: window.safeAreaInsets.bottom,
+                trailing: window.safeAreaInsets.right
+            )
+
+            // `report()` can run while SwiftUI is still mid-update (e.g. from `layoutSubviews`),
+            // so defer the `@Published` writes to avoid "Publishing changes from within view updates"
+            DispatchQueue.main.async {
+                AnchoredPopupMetrics.shared.contentSize = size
+                AnchoredPopupMetrics.shared.safeAreaInsets = insets
+            }
+        }
     }
-}
 
-/// The real, live size of the popup's root container (its window in `.window` display mode,
-/// or the full screen cover in `.sheet` display mode). `WindowManager`'s `UIWindow.bounds` and
-/// `UIScreen.main.bounds` can both diverge from this, so the anchor-centering math reads this
-/// instead to stay correct regardless of display mode or device (e.g. iPhone Duo).
-struct AnchoredPopupContentSizeKey: EnvironmentKey {
-    static let defaultValue: CGSize = .zero
-}
-
-extension EnvironmentValues {
-    var anchoredPopupContentSize: CGSize {
-        get { self[AnchoredPopupContentSizeKey.self] }
-        set { self[AnchoredPopupContentSizeKey.self] = newValue }
+    func makeUIView(context: Context) -> TrackingView {
+        TrackingView()
     }
+
+    func updateUIView(_ uiView: TrackingView, context: Context) {}
 }
 
 // MARK: - Frame getting
